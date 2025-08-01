@@ -1,0 +1,29 @@
+{
+  "name": "moneezify-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "start dev",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KineticscapeStudios/moneezify-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KineticscapeStudios/moneezify-backend/issues"
+  },
+  "homepage": "https://github.com/KineticscapeStudios/moneezify-backend#readme",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "google-auth-library": "^10.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.5"
+  }
+}

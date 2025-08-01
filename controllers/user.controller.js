@@ -1,0 +1,124 @@
+const User = require("../models/user.model");
+const UserDetails = require("../models/userDetails.model");
+const Debt = require("../models/debt.model");
+const UserStrategyOutcome = require("../models/userStrategyOutcome.model");
+const generateFullPlan = require("../services/planGenerator");
+
+// POST /api/user/details
+async function createUserDetails(req, res) {
+  const userId = req.user.id;
+  const {
+    name,
+    age,
+    profession,
+    personalIncome,
+    totalHouseholdIncome = 0,
+    totalApproxExpenses,
+    debts = [],
+  } = req.body;
+  console.log(totalApproxExpenses);
+  // 1) Prevent duplicate details
+  if (await UserDetails.findOne({ user: userId })) {
+    return res.status(400).json({ error: "Details already created." });
+  }
+
+  // 2) Create profile
+  const details = await UserDetails.create({
+    user: userId,
+    name,
+    age,
+    profession,
+    personalIncome,
+    totalHouseholdIncome,
+    approxMonthlyExpenses: totalApproxExpenses,
+  });
+  await User.findByIdAndUpdate(userId, { detailsRef: details._id });
+
+  // 3) Persist debts (no transactions yet)
+  const createdDebts = await Promise.all(
+    debts.map((d) =>
+      Debt.create({
+        user: userId,
+        name: d.name,
+        creditorName: d.creditorName,
+        principal: d.principal,
+        balance: d.balance,
+        minPaymentAmount: d.minPaymentAmount,
+        apr: d.apr,
+        nextDueDate: d.nextDueDate,
+        tagColor: d.tagColor,
+      })
+    )
+  );
+  // const debts = await Debt.find({ user: userId });
+  //   if (!debts.length) return res.status(400).json({ error: "No debts found." });
+
+  // 4) Simulate each strategy
+
+  // const [av, sb, ai, cu] = ["avalanche", "snowball", "ai", "custom"].map(
+  //   async (strat) => {
+  //     await generateFullPlan({
+  //       debts: createdDebts,
+  //       income: personalIncome + totalHouseholdIncome,
+  //       totalExpenses: totalApproxExpenses,
+  //       strategy: strat,
+  //       preview: true,
+  //     });
+  //   }
+  // );
+  const av = await generateFullPlan({
+    debts: createdDebts,
+    income: personalIncome + totalHouseholdIncome,
+    totalExpenses: totalApproxExpenses,
+    strategy: "avalanche",
+    preview: true,
+  });
+  const sb = await generateFullPlan({
+    debts: createdDebts,
+    income: personalIncome + totalHouseholdIncome,
+    totalExpenses: totalApproxExpenses,
+    strategy: "snowball",
+    preview: true,
+  });
+
+  const ai = await generateFullPlan({
+    debts: createdDebts,
+    income: personalIncome + totalHouseholdIncome,
+    totalExpenses: totalApproxExpenses,
+    strategy: "snowball",
+    preview: true,
+  });
+
+  const cu = await generateFullPlan({
+    debts: createdDebts,
+    income: personalIncome + totalHouseholdIncome,
+    totalExpenses: totalApproxExpenses,
+    strategy: "custom",
+    preview: true,
+  });
+  // 5) Upsert into UserStrategyOutcome
+  const outcome = await UserStrategyOutcome.findOneAndUpdate(
+    { user: userId },
+    { avalanche: av, snowball: sb, ai, custom: cu },
+    { upsert: true, new: true }
+  );
+
+  // 6) Respond
+  res.status(201).json({
+    details,
+    debts: createdDebts,
+    strategyOutcomes: outcome,
+  });
+}
+
+// GET /api/user/details
+async function getUserDetails(req, res) {
+  const userId = req.user.id;
+  const details = await UserDetails.findOne({ user: userId });
+  if (!details) {
+    return res.status(404).json({ error: "User details not found." });
+  }
+  res.json(details);
+}
+
+module.exports = { createUserDetails, getUserDetails };

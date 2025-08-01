@@ -1,0 +1,22 @@
+const mongoose = require("mongoose");
+
+const debtSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    name: { type: String, required: true, trim: true },
+    creditorName: { type: String, required: true, trim: true },
+    principal: { type: Number, required: true },
+    balance: { type: Number, required: true },
+    minPaymentAmount: { type: Number, required: true },
+    apr: { type: Number, required: true },
+    nextDueDate: { type: Date, required: true },
+    tagColor: {
+      type: String,
+      match: /^#([0-9A-F]{3}){1,2}$/i,
+      default: "#4aff59ff",
+    },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Debt", debtSchema);
