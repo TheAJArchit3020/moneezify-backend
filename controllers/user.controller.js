@@ -22,6 +22,7 @@ async function createUserDetails(req, res) {
     expenseByCategory,
     strategy,
     debts = [],
+    currency,
   } = req.body;
   // 1) Prevent duplicate details
   if (await UserDetails.findOne({ user: userId })) {
@@ -44,6 +45,7 @@ async function createUserDetails(req, res) {
     totalHouseholdIncome,
     strategy,
     approxMonthlyExpenses: totalApproxExpenses,
+    selectedCurrency: currency || "$",
   });
   await User.findByIdAndUpdate(userId, { detailsRef: details._id });
 

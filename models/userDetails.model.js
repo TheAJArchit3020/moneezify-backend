@@ -14,6 +14,7 @@ const userDetailsSchema = new mongoose.Schema(
     personalIncome: { type: Number, required: true },
     totalHouseholdIncome: { type: Number, default: 0 },
     approxMonthlyExpenses: { type: Number, default: 0, required: true },
+    selectedCurrency: { type: String, default: "$" },
     currentStrategy: {
       type: String,
       enum: ["avalanche", "snowball", "ai", "custom"],
