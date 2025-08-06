@@ -14,11 +14,4 @@ router.post("/select", auth, selectStrategy);
 
 router.get("/", auth, getPayoffPlan);
 
-router.post(
-  "/select/moneezifyai",
-  auth,
-  requireSubscription,
-  selectMoneezifyAI
-);
-
 module.exports = router;
