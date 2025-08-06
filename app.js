@@ -14,7 +14,6 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerFile = require("./swagger-output.json");
 
 const app = express();
-require("express-oas-generator").init(app, {});
 app.use(express.json());
 require("./swagger.js")(app);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerFile));

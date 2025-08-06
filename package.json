@@ -24,7 +24,7 @@
   "dependencies": {
     "bull": "^4.16.5",
     "dotenv": "^17.2.1",
-    "express-oas-generator": "^1.0.48",
+    "express": "^5.1.0",
     "google-auth-library": "^10.2.0",
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
