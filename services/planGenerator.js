@@ -129,7 +129,7 @@ async function generateFullPlan(opts) {
     (_, i) =>
       (sims[i] = {
         ...debts[i].toObject(),
-        balance: debts[i].balance,
+        balance: debts[i].principal,
         minPayment: debts[i].minPaymentAmount,
         dueDate: new Date(debts[i].nextDueDate),
       })

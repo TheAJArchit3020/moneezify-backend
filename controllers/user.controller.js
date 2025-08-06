@@ -3,6 +3,9 @@ const UserDetails = require("../models/userDetails.model");
 const Debt = require("../models/debt.model");
 const UserStrategyOutcome = require("../models/userStrategyOutcome.model");
 const generateFullPlan = require("../services/planGenerator");
+const {
+  seedDefaultCategoriesForUser,
+} = require("../services/category.service");
 
 // POST /api/user/details
 async function createUserDetails(req, res) {
@@ -13,14 +16,19 @@ async function createUserDetails(req, res) {
     profession,
     personalIncome,
     totalHouseholdIncome = 0,
-    totalApproxExpenses,
+    expenseByCategory,
     debts = [],
   } = req.body;
-  console.log(totalApproxExpenses);
   // 1) Prevent duplicate details
   if (await UserDetails.findOne({ user: userId })) {
     return res.status(400).json({ error: "Details already created." });
   }
+
+  const totalApproxExpenses =
+    expenseByCategory.investment +
+    expenseByCategory.food +
+    expenseByCategory.health +
+    expenseByCategory.miscellaneous;
 
   // 2) Create profile
   const details = await UserDetails.create({
@@ -102,6 +110,21 @@ async function createUserDetails(req, res) {
     { avalanche: av, snowball: sb, ai, custom: cu },
     { upsert: true, new: true }
   );
+  const DEFAULT_CATS = [
+    { name: "Food", color: "#E67E22", budget: expenseByCategory.food },
+    {
+      name: "Investment",
+      color: "#2980B9",
+      budget: expenseByCategory.investment,
+    },
+    { name: "Health", color: "#C0392B", budget: expenseByCategory.health },
+    {
+      name: "Miscellaneous",
+      color: "#7F8C8D",
+      budget: expenseByCategory.miscellaneous,
+    },
+  ];
+  await seedDefaultCategoriesForUser(userId, DEFAULT_CATS);
 
   // 6) Respond
   res.status(201).json({

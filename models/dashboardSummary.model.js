@@ -1,3 +1,38 @@
+const mongoose = require("mongoose");
+
+const balanceByDebtSchema = new mongoose.Schema({
+  balance: {
+    type: String,
+    default: 0,
+  },
+  debtName: {
+    type: String,
+    default: 0,
+  },
+});
+
+const upcomingTransactionsSchema = new mongoose.Schema({
+  debtTransaction: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "DebtTransaction",
+    required: true,
+  },
+  debtName: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  dueDate: {
+    type: Date,
+    required: true,
+  },
+});
+
 const dashboardSummarySchema = new mongoose.Schema(
   {
     user: {
@@ -10,17 +45,18 @@ const dashboardSummarySchema = new mongoose.Schema(
     // Debt‑free countdown & progress
     debtFreeDate: { type: Date },
     payoffPct: { type: Number, default: 0 }, // 0–100%
+    totalBalance: { type: Number, default: 0 },
     totalDebtPaid: { type: Number, default: 0 },
 
     // debt category if you prefer)
-    balanceByCategory: {
-      type: [categoryAmountSchema],
+    balanceByDebt: {
+      type: [balanceByDebtSchema],
       default: [],
     },
 
     // Next 2–3 upcoming transactions
-    nextTransactions: {
-      type: [nextTxnSchema],
+    upcomingTransactions: {
+      type: [upcomingTransactionsSchema],
       default: [],
     },
   },

@@ -1,6 +1,5 @@
 const UserDetails = require("../models/userDetails.model");
 const Debt = require("../models/debt.model");
-const UserStrategyOutcome = require("../models/userStrategyOutcome.model");
 const PayoffPlan = require("../models/payoffPlan.model");
 const CustomPlan = require("../models/customPlan.model");
 const generateFullPlan = require("./planGenerator");
@@ -10,12 +9,6 @@ async function regeneratePlanForUser(userId, strategy, customPlanId, res) {
   // 3) call generateFullPlan(...)
   // 4) upsert PayoffPlan
   // 5) return the saved plan
-
-  // 1) Fetch stored outcome (includes budgetsSnapshot & summaries)
-  const outcome = await UserStrategyOutcome.findOne({ user: userId });
-  if (!outcome) {
-    return res.status(400).json({ error: "Strategy outcomes not found." });
-  }
 
   // 2) Fetch user details (to get income)
   const details = await UserDetails.findOneAndUpdate(
@@ -44,12 +37,29 @@ async function regeneratePlanForUser(userId, strategy, customPlanId, res) {
   const planSummary = await generateFullPlan({
     userId,
     debts,
-    income: details.personalIncome,
+    income: details.personalIncome + details.totalHouseholdIncome,
     totalExpenses: details.approxMonthlyExpenses,
     strategy,
     customOrder,
     extraPayments,
   });
+
+  let debtOrder = [];
+  if (strategy === "custom" && customPlanId) {
+    const cp = await CustomPlan.findOne({ _id: customPlanId, user: userId });
+    if (!cp) throw new Error("Custom plan not found.");
+    debtOrder = cp.debtOrder;
+  } else if (strategy === "avalanche" || strategy === "ai") {
+    debtOrder = debts
+      .slice()
+      .sort((a, b) => b.apr - a.apr)
+      .map((d) => d._id);
+  } else if (strategy === "snowball") {
+    debtOrder = debts
+      .slice()
+      .sort((a, b) => a.balance - b.balance)
+      .map((d) => d._id);
+  }
 
   const plan = await PayoffPlan.findOneAndUpdate(
     { user: userId },
@@ -58,6 +68,7 @@ async function regeneratePlanForUser(userId, strategy, customPlanId, res) {
       strategy,
       customOrder,
       customPlanRef: customPlanId,
+      debtOrder,
       planTransactions: planSummary.transactionIds,
       estimatedDebtFreeDate: planSummary.estimatedDebtFreeDate,
       totalInterestPaid: planSummary.totalInterestPaid,

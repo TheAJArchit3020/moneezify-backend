@@ -20,6 +20,12 @@ const payoffPlanSchema = new mongoose.Schema(
         return this.strategy === "custom";
       },
     },
+    debtOrder: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Debt",
+      },
+    ],
     customOrder: [
       {
         type: mongoose.Schema.Types.ObjectId,

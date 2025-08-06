@@ -8,6 +8,7 @@ const { selectStrategy } = require("./payoffPlan.controller");
 const { regeneratePlanForUser } = require("../services/plan.service");
 const CustomPlan = require("../models/customPlan.model");
 const mongoose = require("mongoose");
+const eventBus = require("../events/eventBus");
 async function addDebt(req, res) {
   const userId = req.user.id;
   const {
@@ -57,8 +58,61 @@ async function addDebt(req, res) {
   }
   const plan = await regeneratePlanForUser(userId, strategy, customPlanId, res);
 
+  eventBus.emit("dataChanged", { userId: userId });
+
   // 8) return both the new debt and the updated plan
   res.status(201).json({ debt, plan });
 }
 
-module.exports = { addDebt };
+async function getDebt(req, res) {
+  const userId = req.user.id;
+  const debtId = req.params.id;
+
+  if (!debtId) {
+    return res.status(400).json({ error: "Debt ID is required." });
+  }
+
+  const debt = await Debt.findOne({ _id: debtId, user: userId }).lean();
+
+  const debtTransactions = await DebtTransaction.find({
+    debt: debtId,
+    user: userId,
+  }).sort({ dueDate: 1 });
+
+  const debtFreeTimeline = debtTransactions.map((txn) => ({
+    amount: txn.paymentAmount,
+    dueDate: txn.dueDate,
+  }));
+
+  const paidTransactions = debtTransactions
+    .filter((txn) => txn.status === "paid")
+    .map((txn) => ({
+      id: txn._id,
+      amount: txn.paymentAmount,
+      dueDate: txn.dueDate,
+    }));
+  const upcomingTransactions = debtTransactions
+    .filter((txn) => txn.status === "upcoming")
+    .map((txn) => ({
+      id: txn._id,
+      amount: txn.paymentAmount,
+      dueDate: txn.dueDate,
+    }));
+
+  const rawPayoffProgress =
+    ((debt.principal - debt.balance) / debt.principal) * 100;
+
+  const payoffProgress = Math.round(rawPayoffProgress, 2);
+
+  const payload = {
+    currentBalance: debt.balance,
+    upcomingTransactions,
+    paidTransactions,
+    payoffProgress,
+    debtFreeTimeline,
+  };
+  res.status(200).json({
+    payload,
+  });
+}
+module.exports = { addDebt, getDebt };
