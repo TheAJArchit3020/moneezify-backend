@@ -7,7 +7,8 @@
   },
   "scripts": {
     "test": "start dev",
-    "start": "node server.js"
+    "start": "node server.js",
+    "swagger": "node swagger.gen.js"
   },
   "repository": {
     "type": "git",
@@ -23,9 +24,15 @@
   "dependencies": {
     "bull": "^4.16.5",
     "dotenv": "^17.2.1",
+    "express-oas-generator": "^1.0.48",
     "google-auth-library": "^10.2.0",
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.16.5"
+    "mongoose": "^8.16.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "swagger-autogen": "^2.23.7"
   }
 }

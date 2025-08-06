@@ -10,9 +10,14 @@ const customPlanRoutes = require("./routes/customPlan.routes");
 const debtRoutes = require("./routes/debt.routes");
 const transactionRoutes = require("./routes/transaction.routes");
 const SubscriptionRoutes = require("./routes/subscription.routes");
-const app = express();
+const swaggerUi = require("swagger-ui-express");
+const swaggerFile = require("./swagger-output.json");
 
+const app = express();
+require("express-oas-generator").init(app, {});
 app.use(express.json());
+require("./swagger.js")(app);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerFile));
 app.get("/api/ping", (req, res) => {
   res.send("pong");
 });
