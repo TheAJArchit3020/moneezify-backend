@@ -13,6 +13,9 @@ const SubscriptionRoutes = require("./routes/subscription.routes");
 const app = express();
 
 app.use(express.json());
+app.get("/api/ping", (req, res) => {
+  res.send("pong");
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/plan", payoffPlanRoutes);
