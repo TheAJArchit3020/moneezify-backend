@@ -6,6 +6,9 @@ const generateFullPlan = require("../services/planGenerator");
 const {
   seedDefaultCategoriesForUser,
 } = require("../services/category.service");
+const { selectStrategy } = require("./payoffPlan.controller");
+const { regeneratePlanForUser } = require("../services/plan.service");
+const eventBus = require("../events/eventBus");
 
 // POST /api/user/details
 async function createUserDetails(req, res) {
@@ -17,6 +20,7 @@ async function createUserDetails(req, res) {
     personalIncome,
     totalHouseholdIncome = 0,
     expenseByCategory,
+    strategy,
     debts = [],
   } = req.body;
   // 1) Prevent duplicate details
@@ -38,6 +42,7 @@ async function createUserDetails(req, res) {
     profession,
     personalIncome,
     totalHouseholdIncome,
+    strategy,
     approxMonthlyExpenses: totalApproxExpenses,
   });
   await User.findByIdAndUpdate(userId, { detailsRef: details._id });
@@ -124,8 +129,12 @@ async function createUserDetails(req, res) {
       budget: expenseByCategory.miscellaneous,
     },
   ];
-  await seedDefaultCategoriesForUser(userId, DEFAULT_CATS);
 
+  if (strategy) {
+    const plan = await regeneratePlanForUser(userId, strategy);
+  }
+  await seedDefaultCategoriesForUser(userId, DEFAULT_CATS);
+  eventBus.emit("dataChanged", { userId: userId });
   // 6) Respond
   res.status(201).json({
     details,
