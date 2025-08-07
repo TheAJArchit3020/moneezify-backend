@@ -24,7 +24,7 @@ async function rebuildDashboardForUser(userId) {
   const debtFreeDate = plan?.estimatedDebtFreeDate || null;
 
   const debts = await Debt.find({ user: userId }).select(
-    "balance name principal"
+    "balance name principal tagColor"
   );
 
   const totalBalanceRaw = debts.reduce((sum, d) => sum + d.balance, 0);
