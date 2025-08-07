@@ -65,7 +65,7 @@ async function devLogin(req, res) {
 
   // issue JWT
   const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-    expiresIn: "30d",
+    expiresIn: "30s",
   });
 
   res.json({
