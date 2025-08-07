@@ -115,4 +115,75 @@ async function getDebt(req, res) {
     payload,
   });
 }
-module.exports = { addDebt, getDebt };
+
+async function getDebtsSummaries(userId, inProgress) {
+  // 1. fetch all in-progress debts
+  const inProgressDebts = await Debt.find({
+    user: userId,
+    balance: inProgress ? { $lte: 0 } : { $gt: 0 },
+  }).lean();
+
+  // 2. for each debt, grab its last txn and compute payoff%
+  const summaries = await Promise.all(
+    inProgressDebts.map(async (d) => {
+      const lastTxn = await DebtTransaction.findOne({
+        user: userId,
+        debt: d._id,
+      })
+        .sort({ dueDate: -1 })
+        .select("dueDate")
+        .lean();
+
+      // payoff% = (paid / principal) * 100
+      const payoffPct = ((d.principal - d.balance) / d.principal) * 100;
+
+      return {
+        id: d._id,
+        payoffPct: Math.round(payoffPct * 100) / 100, // e.g. 42.37
+        minPaymentAmount: d.minPaymentAmount,
+        apr: d.apr,
+        completionDate: lastTxn?.dueDate || null,
+        tagColor: d.tagColor,
+        name: d.name,
+      };
+    })
+  );
+
+  return summaries;
+}
+async function getTotalPaidFromTransactions(userId) {
+  const paidTxns = await DebtTransaction.find({
+    user: userId,
+    status: "paid",
+  }).select("paymentAmount");
+
+  const totalPaid = paidTxns.reduce((sum, t) => sum + t.paymentAmount, 0);
+
+  return totalPaid;
+}
+
+async function getDebtPage(req, res) {
+  const userId = req.user.id;
+  const debts = await Debt.find({ user: userId });
+
+  if (!debts || debts.length === 0) {
+    return res.status(404).json({ message: "No debts found for this user." });
+  }
+  const totalBalanceRaw = debts.reduce((sum, d) => sum + d.balance, 0);
+  const totalBalance = Math.round(totalBalanceRaw * 100) / 100;
+  const totalPaidRaw = await getTotalPaidFromTransactions(userId);
+  const totalPaid = Math.round(totalPaidRaw * 100) / 100;
+
+  const inProgressDebts = await getDebtsSummaries(userId, false);
+  const completedDebts = await getDebtsSummaries(userId, true);
+
+  const debtPage = {
+    totalBalance,
+    totalPaid,
+    inProgressDebts,
+    completedDebts,
+  };
+
+  res.status(200).json(debtPage);
+}
+module.exports = { addDebt, getDebt, getDebtPage };

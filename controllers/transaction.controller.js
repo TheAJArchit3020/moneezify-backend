@@ -54,6 +54,7 @@ async function logPayment(req, res) {
   const debt = await Debt.findByIdAndUpdate(txn.debt, {
     balance: txn.closingBalance,
     nextDueDate: nextTxn ? nextTxn.dueDate : null,
+    debtPaidOff: txn.closingBalance <= 0,
   });
 
   if (Math.abs(amountPaid) === Math.abs(plannedPayment)) {

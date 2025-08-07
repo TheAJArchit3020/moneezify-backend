@@ -15,6 +15,7 @@ const debtSchema = new mongoose.Schema(
       match: /^#([0-9A-F]{3}){1,2}$/i,
       default: "#4aff59ff",
     },
+    debtPaidOff: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
