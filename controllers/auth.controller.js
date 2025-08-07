@@ -1,6 +1,7 @@
 const { OAuth2Client } = require("google-auth-library");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
+const userDetailsModel = require("../models/userDetails.model");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -38,7 +39,7 @@ async function googleSignIn(req, res) {
   // 4) Tell front‑end whether details exist
   let details = null;
   if (user.detailsRef) {
-    details = await UserDetails.findById(user.detailsRef).lean();
+    details = await userDetailsModel.findById(user.detailsRef).lean();
   }
 
   res.json({
