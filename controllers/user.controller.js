@@ -16,11 +16,13 @@ async function createUserDetails(req, res) {
   const {
     name,
     age,
+    email,
     profession,
     personalIncome,
     totalHouseholdIncome = 0,
     expenseByCategory,
     strategy,
+    phoneNumber,
     debts = [],
     currency,
   } = req.body;
@@ -44,6 +46,8 @@ async function createUserDetails(req, res) {
     personalIncome,
     totalHouseholdIncome,
     strategy,
+    email,
+    phoneNumber,
     approxMonthlyExpenses: totalApproxExpenses,
     selectedCurrency: currency || "$",
   });
