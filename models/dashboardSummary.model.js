@@ -9,6 +9,9 @@ const balanceByDebtSchema = new mongoose.Schema({
     type: String,
     default: 0,
   },
+  color: {
+    type: String,
+  },
 });
 
 const upcomingTransactionsSchema = new mongoose.Schema({

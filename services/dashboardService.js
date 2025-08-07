@@ -45,6 +45,7 @@ async function rebuildDashboardForUser(userId) {
   const balanceByDebt = debts.map((d) => ({
     debtName: d.name,
     balance: d.balance,
+    color: d.color, // default color if not set
   }));
 
   // 3) totalDebtPaid
