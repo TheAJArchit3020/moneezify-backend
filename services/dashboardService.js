@@ -57,7 +57,7 @@ async function rebuildDashboardForUser(userId) {
     status: "upcoming",
   })
     .sort({ dueDate: 1 })
-    .limit(3)
+    .limit(10)
     .populate("debt", "name");
 
   const upcomingTransactions = upcoming.map((t) => ({
