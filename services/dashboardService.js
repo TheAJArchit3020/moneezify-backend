@@ -47,7 +47,7 @@ async function rebuildDashboardForUser(userId) {
     balance: d.balance,
     color: d.tagColor, // default color if not set
   }));
-
+  console.log(balanceByDebt.color);
   // 3) totalDebtPaid
   const totalDebtPaid = totalPaid;
 
