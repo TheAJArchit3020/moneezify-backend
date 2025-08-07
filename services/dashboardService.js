@@ -82,4 +82,4 @@ async function rebuildDashboardForUser(userId) {
   );
 }
 
-module.exports = { rebuildDashboardForUser, rebuildDashboardForUser };
+module.exports = { rebuildDashboardForUser };
