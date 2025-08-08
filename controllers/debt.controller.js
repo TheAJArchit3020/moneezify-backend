@@ -176,7 +176,7 @@ async function getDebtPage(req, res) {
   }
   const totalBalanceRaw = debts.reduce((sum, d) => sum + d.balance, 0);
   const totalBalance = Math.round(totalBalanceRaw * 100) / 100;
-  const totalPaid = getTotalDebtPaid(userId);
+  const totalPaid = await getTotalDebtPaid(userId);
 
   const inProgressDebts = await getDebtsSummaries(userId, false);
   const completedDebts = await getDebtsSummaries(userId, true);

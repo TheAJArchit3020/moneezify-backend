@@ -36,7 +36,7 @@ async function getPayoffPlan(req, res) {
 
   const stepWisePlan = rawSteps.map((txn) => ({
     id: txn._id,
-    amount: txn.amount,
+    amount: txn.paymentAmount,
     dueDate: txn.dueDate,
     name: txn.debt.name,
   }));
