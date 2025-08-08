@@ -30,7 +30,7 @@ async function getPayoffPlan(req, res) {
       status: "upcoming",
     })
     .sort({ dueDate: 1 })
-    .select("amount dueDate debt")
+    .select("paymentAmount dueDate debt")
     .populate({ path: "debt", select: "name" })
     .lean();
 
