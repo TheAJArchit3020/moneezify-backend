@@ -110,6 +110,8 @@ async function getDebt(req, res) {
     paidTransactions,
     payoffProgress,
     debtFreeTimeline,
+    debtName: debt.name,
+    creditorName: debt.creditorName,
   };
   res.status(200).json({
     payload,

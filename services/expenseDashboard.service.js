@@ -26,7 +26,7 @@ async function rebuildExpenseDashboard(userId, year, month) {
   const byCat = {};
   entries.forEach((e) => {
     totalSpent += e.amount;
-    const cid = e.category._id.toString();
+    const cid = String(e.category._id);
     byCat[cid] = (byCat[cid] || 0) + e.amount;
   });
 
@@ -34,7 +34,7 @@ async function rebuildExpenseDashboard(userId, year, month) {
   const byCategory = cats.map((c) => ({
     category: c._id,
     budget: c.budget,
-    spent: parseFloat((byCat[c._id.toString()] || 0).toFixed(2)),
+    spent: parseFloat((byCat[String(c._id)] || 0).toFixed(2)),
   }));
 
   // 5) Build recentExpenses
