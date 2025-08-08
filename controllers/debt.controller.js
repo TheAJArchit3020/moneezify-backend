@@ -145,19 +145,24 @@ async function getDebtsSummaries(userId, inProgress) {
         completionDate: lastTxn?.dueDate || null,
         tagColor: d.tagColor,
         name: d.name,
+        balance: d.balance,
       };
     })
   );
 
   return summaries;
 }
-async function getTotalPaidFromTransactions(userId) {
-  const paidTxns = await DebtTransaction.find({
-    user: userId,
-    status: "paid",
-  }).select("paymentAmount");
+async function getTotalDebtPaid(userId) {
+  const debts = await Debt.find({ user: userId }).select("principal balance");
 
-  const totalPaid = paidTxns.reduce((sum, t) => sum + t.paymentAmount, 0);
+  const totalBalanceRaw = debts.reduce((sum, d) => sum + d.balance, 0);
+  const totalBalance = Math.round(totalBalanceRaw * 100) / 100;
+
+  const totalPrincipalRaw = debts.reduce((sum, d) => sum + d.principal, 0);
+  const totalPrincipal = Math.round(totalPrincipalRaw * 100) / 100;
+
+  const totalPaidRaw = totalPrincipal - totalBalance;
+  const totalPaid = Math.round(totalPaidRaw * 100) / 100;
 
   return totalPaid;
 }
@@ -171,8 +176,7 @@ async function getDebtPage(req, res) {
   }
   const totalBalanceRaw = debts.reduce((sum, d) => sum + d.balance, 0);
   const totalBalance = Math.round(totalBalanceRaw * 100) / 100;
-  const totalPaidRaw = await getTotalPaidFromTransactions(userId);
-  const totalPaid = Math.round(totalPaidRaw * 100) / 100;
+  const totalPaid = getTotalDebtPaid(userId);
 
   const inProgressDebts = await getDebtsSummaries(userId, false);
   const completedDebts = await getDebtsSummaries(userId, true);

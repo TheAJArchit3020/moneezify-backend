@@ -61,6 +61,7 @@ async function getPayoffPlan(req, res) {
         id: d._id,
         name: d.name,
         apr: d.apr,
+        balance: d.balance,
         payoffProgress: ((d.principal - d.balance) / d.principal) * 100,
         estimatedDebtFreeDate: lastTxn?.dueDate ?? null,
       };

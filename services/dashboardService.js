@@ -5,12 +5,16 @@ const DebtTransaction = require("../models/debtTransaction.model");
 const PayoffPlan = require("../models/payoffPlan.model");
 
 async function getTotalPaidFromTransactions(userId) {
-  const paidTxns = await DebtTransaction.find({
-    user: userId,
-    status: "paid",
-  }).select("paymentAmount");
+  const debts = await Debt.find({ user: userId }).select("principal balance");
 
-  const totalPaid = paidTxns.reduce((sum, t) => sum + t.paymentAmount, 0);
+  const totalBalanceRaw = debts.reduce((sum, d) => sum + d.balance, 0);
+  const totalBalance = Math.round(totalBalanceRaw * 100) / 100;
+
+  const totalPrincipalRaw = debts.reduce((sum, d) => sum + d.principal, 0);
+  const totalPrincipal = Math.round(totalPrincipalRaw * 100) / 100;
+
+  const totalPaidRaw = totalPrincipal - totalBalance;
+  const totalPaid = Math.round(totalPaidRaw * 100) / 100;
 
   return totalPaid;
 }

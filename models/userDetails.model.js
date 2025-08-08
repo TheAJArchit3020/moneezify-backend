@@ -27,3 +27,6 @@ const userDetailsSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("UserDetails", userDetailsSchema);
+
+//debt balance
+//total debt paid calculation is wrong
