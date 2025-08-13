@@ -13,6 +13,10 @@ const categoryBreakdownSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    categoryName: {
+      type: String,
+      required: true,
+    },
     spent: {
       type: Number,
       required: true,
@@ -42,7 +46,6 @@ const expenseDashboardSummarySchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      unique: true,
       required: true,
     },
     year: { type: Number, required: true },
@@ -53,16 +56,14 @@ const expenseDashboardSummarySchema = new mongoose.Schema(
 
     byCategory: { type: [categoryBreakdownSchema], default: [] },
     recentExpenses: { type: [recentExpenseSchema], default: [] },
+    spendingTrend: { type: [{ date: Date, amount: Number }], default: [] },
   },
   {
     timestamps: true,
   }
 );
 
-expenseDashboardSummarySchema.index(
-  { user: 1, year: 1, month: 1 },
-  { unique: true }
-);
+expenseDashboardSummarySchema.index({ user: 1, year: 1, month: 1 });
 
 module.exports = mongoose.model(
   "ExpenseDashboardSummary",

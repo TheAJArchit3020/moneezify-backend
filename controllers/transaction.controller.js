@@ -104,4 +104,20 @@ async function getTransaction(req, res) {
   res.json({ transaction: txn });
 }
 
-module.exports = { logPayment, getTransaction };
+async function saveNote(req, res) {
+  const userId = req.user.id;
+  const txnId = req.params.id;
+  const { note } = req.body;
+  if (!note) {
+    return res.status(400).json({ error: "Note content is required." });
+  }
+  const txn = await DebtTransaction.findOne({ _id: txnId, user: userId });
+  if (!txn) {
+    return res.status(404).json({ error: "Transaction not found." });
+  }
+  txn.note = note;
+  await txn.save();
+  res.json({ message: "Note saved successfully.", transaction: txn });
+}
+
+module.exports = { logPayment, getTransaction, saveNote };

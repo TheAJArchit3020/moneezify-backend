@@ -5,6 +5,7 @@ const auth = require("../middlewares/auth.middleware");
 const {
   selectStrategy,
   getPayoffPlan,
+  getStrategyOutcomes,
 } = require("../controllers/payoffPlan.controller");
 const {
   requireSubscription,
@@ -13,5 +14,7 @@ const {
 router.post("/select", auth, selectStrategy);
 
 router.get("/", auth, getPayoffPlan);
+
+router.get("/outcomes", auth, getStrategyOutcomes);
 
 module.exports = router;

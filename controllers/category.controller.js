@@ -22,16 +22,40 @@ async function createCategory(req, res) {
 
 // PUT /api/categories/:id
 async function updateCategory(req, res) {
-  const { id } = req.params;
-  const { name, color, budget } = req.body;
+  try {
+    const updates = Array.isArray(req.body) ? req.body : [req.body];
 
-  const cat = await ExpenseCategory.findOneAndUpdate(
-    { _id: id, user: req.user.id },
-    { name, color, budget },
-    { new: true }
-  );
-  if (!cat) return res.status(404).json({ error: "Category not found" });
-  res.json(cat);
+    // Validate all updates
+    for (const update of updates) {
+      if (!update.id || !update.budget) {
+        return res.status(400).json({
+          error: "Each category update must include id and budget",
+        });
+      }
+    }
+
+    const updatedCategories = await Promise.all(
+      updates.map(async ({ id, color, budget }) => {
+        const cat = await ExpenseCategory.findOne({
+          _id: id,
+          user: req.user.id,
+        });
+
+        if (!cat) {
+          throw new Error(`Category not found: ${id}`);
+        }
+
+        if (color) cat.color = color;
+        cat.budget = budget;
+
+        return cat.save();
+      })
+    );
+
+    res.json(updatedCategories);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 }
 
 // DELETE /api/categories/:id

@@ -2,6 +2,7 @@ const eventBus = require("../events/eventBus");
 const debtModel = require("../models/debt.model");
 const debtTransactionModel = require("../models/debtTransaction.model");
 const payoffPlanModel = require("../models/payoffPlan.model");
+const userStrategyOutcomeModel = require("../models/userStrategyOutcome.model");
 const { regeneratePlanForUser } = require("../services/plan.service");
 
 async function selectStrategy(req, res) {
@@ -41,6 +42,11 @@ async function getPayoffPlan(req, res) {
     name: txn.debt.name,
   }));
 
+  const debtFreeTimeline = stepWisePlan.map((step) => ({
+    amount: step.amount,
+    dueDate: step.dueDate,
+  }));
+
   const debts = await debtModel
     .find({ _id: { $in: plan.debtOrder } })
     .select("name apr principal balance")
@@ -71,8 +77,25 @@ async function getPayoffPlan(req, res) {
   res.json({
     ...plan,
     stepWisePlan,
+    debtFreeTimeline,
     debtOrder,
   });
 }
 
-module.exports = { selectStrategy, getPayoffPlan };
+async function getStrategyOutcomes(req, res) {
+  const userId = req.user.id;
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized access." });
+  }
+  try {
+    const outcomes = await userStrategyOutcomeModel.find({ user: userId });
+
+    res.json(outcomes);
+  } catch (error) {
+    console.error("Error fetching strategy outcomes:", error);
+    res.status(500).json({ error: "Failed to fetch strategy outcomes." });
+  }
+  //here i just want to return the data from the userStrategy Outcomes model
+}
+
+module.exports = { selectStrategy, getPayoffPlan, getStrategyOutcomes };

@@ -17,7 +17,9 @@ async function rebuildExpenseDashboard(userId, year, month) {
   const entries = await ExpenseEntry.find({
     user: userId,
     date: { $gte: start, $lt: end },
-  }).sort({ date: -1 });
+  })
+    .sort({ date: -1 })
+    .populate("category", "name budget");
 
   console.log("Expense entries:", entries);
 
@@ -34,6 +36,7 @@ async function rebuildExpenseDashboard(userId, year, month) {
   const byCategory = cats.map((c) => ({
     category: c._id,
     budget: c.budget,
+    categoryName: c.name,
     spent: parseFloat((byCat[String(c._id)] || 0).toFixed(2)),
   }));
 
@@ -44,6 +47,11 @@ async function rebuildExpenseDashboard(userId, year, month) {
     category: e.category.name,
     amount: parseFloat(e.amount.toFixed(2)),
     note: e.note,
+  }));
+  //here we also need to add a spending trend which is a graph of spending over the month
+  const spendingTrend = entries.map((e) => ({
+    date: e.date,
+    amount: parseFloat(e.amount.toFixed(2)),
   }));
 
   // 6) Upsert summary
@@ -56,6 +64,7 @@ async function rebuildExpenseDashboard(userId, year, month) {
       totalSpent: parseFloat(totalSpent.toFixed(2)),
       byCategory,
       recentExpenses,
+      spendingTrend,
     },
     { upsert: true, new: true }
   );

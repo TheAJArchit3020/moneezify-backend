@@ -25,6 +25,7 @@ function addMonths(date, n) {
  */
 
 async function generateFullPlan(opts) {
+  console.log({ opts });
   const {
     userId,
     debts,
