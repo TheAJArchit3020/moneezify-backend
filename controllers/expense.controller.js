@@ -20,7 +20,7 @@ async function logExpense(req, res) {
       amount,
       category,
       date,
-      description,
+      note: description,
     });
     eventBus.emit("expenseChanged", {
       userId: req.user.id,
