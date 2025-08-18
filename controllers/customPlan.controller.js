@@ -167,4 +167,28 @@ async function previewCustomPlan(req, res) {
   });
 }
 
-module.exports = { createCustomPlan, getDefaultCustomPlan, previewCustomPlan };
+async function getUserCustomPlans(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const plans = await CustomPlan.find({ user: userId })
+      .select("_id name")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Shape the response as an array of { id, name }
+    const result = plans.map((p) => ({ id: String(p._id), name: p.name }));
+
+    return res.json({ plans: result }); // empty array if none
+  } catch (err) {
+    console.error("getUserCustomPlans error:", err);
+    return res.status(500).json({ error: "Failed to fetch custom plans." });
+  }
+}
+
+module.exports = {
+  createCustomPlan,
+  getDefaultCustomPlan,
+  previewCustomPlan,
+  getUserCustomPlans,
+};

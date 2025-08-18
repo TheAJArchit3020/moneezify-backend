@@ -18,7 +18,12 @@ module.exports = async function auth(req, res, next) {
     if (!user) {
       return res.status(401).json({ error: "Invalid token: user not found" });
     }
-
+    if (user.isDeleted) {
+      return res.status(401).json({
+        error:
+          "Account pending deletion. Log in again to restore within 30 days.",
+      });
+    }
     // Attach to request for downstream handlers
     req.user = { id: user._id, email: user.email };
     next();

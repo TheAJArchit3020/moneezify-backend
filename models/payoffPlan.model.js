@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const softDeletePlugin = require("../lib/softDeletePlugin");
 
 const payoffPlanSchema = new mongoose.Schema(
   {
@@ -10,7 +11,7 @@ const payoffPlanSchema = new mongoose.Schema(
     },
     strategy: {
       type: String,
-      enum: ["ai", "avalanche", "snowball", "custom"],
+      enum: ["hybrid", "avalanche", "snowball", "custom"],
       default: "avalanche",
     },
     customPlanRef: {
@@ -42,5 +43,8 @@ const payoffPlanSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+payoffPlanSchema.plugin(softDeletePlugin);
+payoffPlanSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model("PayoffPlan", payoffPlanSchema);

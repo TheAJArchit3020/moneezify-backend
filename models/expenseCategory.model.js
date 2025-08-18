@@ -1,6 +1,6 @@
 // models/expenseCategory.model.js
 const mongoose = require("mongoose");
-
+const softDeletePlugin = require("../lib/softDeletePlugin");
 const expenseCategorySchema = new mongoose.Schema(
   {
     user: {
@@ -32,6 +32,12 @@ const expenseCategorySchema = new mongoose.Schema(
 );
 
 // prevent duplicates per user
-expenseCategorySchema.index({ user: 1, name: 1 }, { unique: true });
+expenseCategorySchema.index({ user: 1 });
+expenseCategorySchema.index(
+  { name: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: { $eq: false } } }
+);
+expenseCategorySchema.plugin(softDeletePlugin);
+expenseCategorySchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model("ExpenseCategory", expenseCategorySchema);

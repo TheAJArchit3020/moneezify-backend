@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+const softDeletePlugin = require("../lib/softDeletePlugin");
 const extraPaymentSchema = new mongoose.Schema(
   {
     debt: {
@@ -22,7 +22,6 @@ const customPlanSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     name: {
       type: String,
@@ -59,6 +58,10 @@ const customPlanSchema = new mongoose.Schema(
 );
 
 // Ensure each user can’t reuse the same plan name
-customPlanSchema.index({ user: 1, name: 1 }, { unique: true });
-
+customPlanSchema.index(
+  { user: 1, name: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: { $eq: false } } }
+);
+customPlanSchema.plugin(softDeletePlugin);
+customPlanSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 module.exports = mongoose.model("CustomPlan", customPlanSchema);

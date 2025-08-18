@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const softDeletePlugin = require("../lib/softDeletePlugin");
 
 const userDetailsSchema = new mongoose.Schema(
   {
@@ -9,7 +10,7 @@ const userDetailsSchema = new mongoose.Schema(
       unique: true,
     },
     name: { type: String, required: true, trim: true },
-    email: { type: String, unique: true, trim: true },
+    email: { type: String, trim: true },
     phoneNumber: { type: String, trim: true },
     age: { type: Number, required: true },
     profession: { type: String, default: "" },
@@ -25,7 +26,12 @@ const userDetailsSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
+userDetailsSchema.plugin(softDeletePlugin);
+userDetailsSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: { $eq: false } } }
+);
+userDetailsSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 module.exports = mongoose.model("UserDetails", userDetailsSchema);
 
 //debt balance

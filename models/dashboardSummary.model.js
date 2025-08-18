@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+const softDeletePlugin = require("../lib/softDeletePlugin");
 const balanceByDebtSchema = new mongoose.Schema({
   balance: {
     type: String,
@@ -66,5 +66,6 @@ const dashboardSummarySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
+dashboardSummarySchema.plugin(softDeletePlugin);
+dashboardSummarySchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 module.exports = mongoose.model("DashboardSummary", dashboardSummarySchema);

@@ -1,4 +1,5 @@
 // controllers/category.controller.js
+const eventBus = require("../events/eventBus");
 const ExpenseCategory = require("../models/expenseCategory.model");
 
 // GET /api/categories
@@ -17,6 +18,7 @@ async function createCategory(req, res) {
     budget,
     isDefault: false,
   });
+  eventBus.emit("categoryChanged", { userId: req.user.id });
   res.status(201).json(cat);
 }
 
@@ -51,6 +53,7 @@ async function updateCategory(req, res) {
         return cat.save();
       })
     );
+    eventBus.emit("categoryChanged", { userId: req.user.id });
 
     res.json(updatedCategories);
   } catch (error) {

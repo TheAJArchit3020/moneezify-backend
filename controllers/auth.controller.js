@@ -2,6 +2,17 @@ const { OAuth2Client } = require("google-auth-library");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 const userDetailsModel = require("../models/userDetails.model");
+const debtModel = require("../models/debt.model");
+const debtTransactionModel = require("../models/debtTransaction.model");
+const expenseCategoryModel = require("../models/expenseCategory.model");
+const expenseEntryModel = require("../models/expenseEntry.model");
+const monthlyExpenseSummaryModel = require("../models/monthlyExpenseSummary.model");
+const expenseDashboardSummaryModel = require("../models/expenseDashboardSummary.model");
+const dashboardSummaryModel = require("../models/dashboardSummary.model");
+const payoffPlanModel = require("../models/payoffPlan.model");
+const subscriptionModel = require("../models/subscription.model");
+const customPlanModel = require("../models/customPlan.model");
+const userStrategyOutcomeModel = require("../models/userStrategyOutcome.model");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -25,10 +36,18 @@ async function googleSignIn(req, res) {
   // 2) Find or create auth user
   let user = await User.findOne({ googleId: payload.sub });
   if (!user) {
-    user = await User.create({
-      email: payload.email,
-      googleId: payload.sub,
-    });
+    const deleted = await User.findOne({ googleId: payload.sub }).withDeleted();
+    if (
+      deleted &&
+      deleted.isDeleted &&
+      (!deleted.purgeAt || deleted.purgeAt > new Date())
+    ) {
+      await restoreUserAccount(deleted._id);
+      user = await User.findById(deleted._id);
+    } else {
+      // 3) Create fresh
+      user = await User.create({ email: payload.email, googleId: payload.sub });
+    }
   }
 
   // 3) Issue your own JWT
@@ -48,6 +67,37 @@ async function googleSignIn(req, res) {
     detailsExists: Boolean(details),
     details, // will be `null` if no details yet
   });
+}
+
+async function restoreUserAccount(userId) {
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await User.updateOne(
+        { _id: userId },
+        { $set: { isDeleted: false }, $unset: { deletedAt: "", purgeAt: "" } },
+        { session }
+      );
+
+      await Promise.all([
+        userDetailsModel.restoreManyByUser(userId, session),
+        debtModel.restoreManyByUser(userId, session),
+        debtTransactionModel.restoreManyByUser(userId, session),
+        expenseCategoryModel.restoreManyByUser(userId, session),
+        expenseEntryModel.restoreManyByUser(userId, session),
+        monthlyExpenseSummaryModel.restoreManyByUser(userId, session),
+        expenseDashboardSummaryModel.restoreManyByUser(userId, session),
+        dashboardSummaryModel?.restoreManyByUser?.(userId, session) ??
+          Promise.resolve(),
+        payoffPlanModel.restoreManyByUser(userId, session),
+        subscriptionModel.restoreManyByUser(userId, session),
+        customPlanModel.restoreManyByUser(userId, session),
+        userStrategyOutcomeModel.restoreManyByUser(userId, session),
+      ]);
+    });
+  } finally {
+    await session.endSession();
+  }
 }
 
 async function devLogin(req, res) {

@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-
+const softDeletePlugin = require("../lib/softDeletePlugin");
 const debtSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -19,5 +19,8 @@ const debtSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+debtSchema.plugin(softDeletePlugin);
+debtSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model("Debt", debtSchema);

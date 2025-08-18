@@ -1,6 +1,6 @@
 // models/debtTransaction.model.js
 const mongoose = require("mongoose");
-
+const softDeletePlugin = require("../lib/softDeletePlugin");
 const debtTransactionSchema = new mongoose.Schema(
   {
     user: {
@@ -69,5 +69,6 @@ const debtTransactionSchema = new mongoose.Schema(
 
 // Index to speed lookups by user/debt and sort by dueDate
 debtTransactionSchema.index({ user: 1, debt: 1, dueDate: 1 });
-
+debtTransactionSchema.plugin(softDeletePlugin);
+debtTransactionSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 module.exports = mongoose.model("DebtTransaction", debtTransactionSchema);

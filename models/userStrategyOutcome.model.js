@@ -1,5 +1,6 @@
 // models/userStrategyOutcome.model.js
 const mongoose = require("mongoose");
+const softDeletePlugin = require("../lib/softDeletePlugin");
 
 const outcomeDetailsSchema = new mongoose.Schema(
   {
@@ -35,7 +36,7 @@ const userStrategyOutcomeSchema = new mongoose.Schema(
       type: outcomeDetailsSchema,
       required: true,
     },
-    ai: {
+    hybrid: {
       type: outcomeDetailsSchema,
       required: true,
     },
@@ -49,7 +50,8 @@ const userStrategyOutcomeSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
+userStrategyOutcomeSchema.plugin(softDeletePlugin);
+userStrategyOutcomeSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 module.exports = mongoose.model(
   "UserStrategyOutcome",
   userStrategyOutcomeSchema

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const softDeletePlugin = require("../lib/softDeletePlugin");
 
 const categoryAmountSchema = new mongoose.Schema(
   {
@@ -73,6 +74,8 @@ monthlyExpenseSummarySchema.index(
   { unique: true }
 );
 
+monthlyExpenseSummarySchema.plugin(softDeletePlugin);
+monthlyExpenseSummarySchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 module.exports = mongoose.model(
   "MonthlyExpenseSummary",
   monthlyExpenseSummarySchema

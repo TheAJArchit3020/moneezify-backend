@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const softDeletePlugin = require("../lib/softDeletePlugin");
 
 const expenseEntrySchema = new mongoose.Schema(
   {
@@ -31,5 +32,6 @@ const expenseEntrySchema = new mongoose.Schema(
 
 // Index to speed up monthly lookups
 expenseEntrySchema.index({ user: 1, date: 1 });
-
+expenseEntrySchema.plugin(softDeletePlugin);
+expenseEntrySchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 module.exports = mongoose.model("ExpenseEntry", expenseEntrySchema);

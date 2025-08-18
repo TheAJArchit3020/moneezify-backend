@@ -70,4 +70,43 @@ async function rebuildExpenseDashboard(userId, year, month) {
   );
 }
 
-module.exports = { rebuildExpenseDashboard };
+async function rebuildAllExpenseDashboardsForUser(userId) {
+  const uid =
+    typeof userId === "string" ? new mongoose.Types.ObjectId(userId) : userId;
+
+  // Months from expenses
+  const fromEntries = await ExpenseEntry.aggregate([
+    { $match: { user: uid } },
+    {
+      $group: {
+        _id: { y: { $year: "$date" }, m: { $month: "$date" } },
+      },
+    },
+    { $project: { _id: 0, year: "$_id.y", month: "$_id.m" } },
+  ]);
+
+  // Months from existing summaries (maybe some empty months were created earlier)
+  const fromSummaries = await ExpenseDashboardSummary.find({ user: uid })
+    .select("year month -_id")
+    .lean();
+
+  // Union + sort
+  const key = (x) => `${x.year}-${String(x.month).padStart(2, "0")}`;
+  const mergedMap = new Map();
+  [...fromEntries, ...fromSummaries].forEach((p) => mergedMap.set(key(p), p));
+  const months = Array.from(mergedMap.values()).sort((a, b) =>
+    a.year === b.year ? a.month - b.month : a.year - b.year
+  );
+
+  // Rebuild sequentially (keeps DB load predictable)
+  for (const { year, month } of months) {
+    await rebuildExpenseDashboard(uid, year, month);
+  }
+
+  return months.length;
+}
+
+module.exports = {
+  rebuildExpenseDashboard,
+  rebuildAllExpenseDashboardsForUser,
+};

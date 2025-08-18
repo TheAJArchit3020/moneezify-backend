@@ -1,6 +1,6 @@
 // models/expenseDashboardSummary.model.js
 const mongoose = require("mongoose");
-
+const softDeletePlugin = require("../lib/softDeletePlugin");
 const categoryBreakdownSchema = new mongoose.Schema(
   {
     category: {
@@ -64,7 +64,8 @@ const expenseDashboardSummarySchema = new mongoose.Schema(
 );
 
 expenseDashboardSummarySchema.index({ user: 1, year: 1, month: 1 });
-
+expenseDashboardSummarySchema.plugin(softDeletePlugin);
+expenseDashboardSummarySchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 module.exports = mongoose.model(
   "ExpenseDashboardSummary",
   expenseDashboardSummarySchema

@@ -2,6 +2,7 @@
 const eventBus = require("../events/eventBus");
 const {
   rebuildExpenseDashboard,
+  rebuildAllExpenseDashboardsForUser,
 } = require("../services/expenseDashboard.service");
 
 // Debounce updates per user/month
@@ -22,11 +23,11 @@ eventBus.on("expenseChanged", ({ userId, year, month }) => {
     }, 500)
   ); // batch rapid events
 });
-eventBus.on("categoryChanged", ({ userId }) => {
-  const today = new Date();
-  eventBus.emit("expenseChanged", {
-    userId,
-    year: today.getFullYear(),
-    month: today.getMonth() + 1,
-  });
+eventBus.on("categoryChanged", async ({ userId }) => {
+  try {
+    await rebuildAllExpenseDashboardsForUser(userId);
+    console.log(`Rebuilt expense dashboards for user ${userId}`);
+  } catch (e) {
+    console.error("rebuildAllExpenseDashboardsForUser failed:", e);
+  }
 });

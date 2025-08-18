@@ -1,5 +1,6 @@
 // models/subscription.model.js
 const mongoose = require("mongoose");
+const softDeletePlugin = require("../lib/softDeletePlugin");
 
 const subscriptionSchema = new mongoose.Schema(
   {
@@ -38,9 +39,7 @@ const subscriptionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-subscriptionSchema.index(
-  { user: 1, platform: 1, productId: 1 },
-  { unique: true }
-);
+subscriptionSchema.plugin(softDeletePlugin);
+subscriptionSchema.index({ purgeAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model("Subscription", subscriptionSchema);

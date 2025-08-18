@@ -9,6 +9,10 @@ const { regeneratePlanForUser } = require("../services/plan.service");
 const CustomPlan = require("../models/customPlan.model");
 const mongoose = require("mongoose");
 const eventBus = require("../events/eventBus");
+const {
+  computeAndUpsertStrategyOutcomes,
+} = require("../services/strategyOutcome.service");
+
 async function addDebt(req, res) {
   const userId = req.user.id;
   const {
@@ -22,48 +26,90 @@ async function addDebt(req, res) {
     tagColor,
   } = req.body;
 
-  // 1) create the debt
-  const debt = await Debt.create({
-    user: userId,
-    name,
-    creditorName,
-    principal,
-    balance,
-    minPaymentAmount,
-    apr,
-    nextDueDate,
-    tagColor,
-  });
-  const savedDebt = await debt.save();
-
-  // 3) fetch the current strategy from profile
-  const details = await UserDetails.findOne({ user: userId });
-  const strategy = details.currentStrategy;
-
-  let customPlanId;
-  if (strategy === "custom") {
-    // assume you store the chosen custom plan id on details or elsewhere
-    // here’s a quick example reading from the last PayoffPlan doc
-    const lastPlan = await PayoffPlan.findOne({
+  try {
+    // 1) Create the debt
+    const debt = await Debt.create({
       user: userId,
-      strategy: "custom",
+      name,
+      creditorName,
+      principal,
+      balance,
+      minPaymentAmount,
+      apr,
+      nextDueDate,
+      tagColor,
     });
-    customPlanId = lastPlan.customPlanRef._id;
+    const savedDebt = await debt.save();
 
-    const customPlan = await CustomPlan.findOneAndUpdate(
-      { _id: customPlanId },
-      { $push: { debtOrder: savedDebt._id } },
-      { upsert: true }
+    // 2) Fetch profile + current strategy
+    const details = await UserDetails.findOne({ user: userId });
+    if (!details) {
+      return res
+        .status(400)
+        .json({ error: "User details not found. Create details first." });
+    }
+    const strategy = details.strategy || details.currentStrategy || "avalanche";
+
+    // 3) If strategy is custom, append this debt to the custom plan’s order
+    let customPlanId = null;
+    let customOrder = [];
+    if (strategy === "custom") {
+      const lastPlan = await PayoffPlan.findOne({
+        user: userId,
+        strategy: "custom",
+      }).populate("customPlanRef");
+
+      // Either use the existing custom plan or create one if missing
+      let cp =
+        lastPlan?.customPlanRef ||
+        (await CustomPlan.create({ user: userId, debtOrder: [] }));
+      customPlanId = cp._id;
+
+      // Push this new debt into the custom order if not already present
+      if (!cp.debtOrder.map(String).includes(String(savedDebt._id))) {
+        cp = await CustomPlan.findByIdAndUpdate(
+          customPlanId,
+          { $push: { debtOrder: savedDebt._id } },
+          { new: true }
+        );
+      }
+      customOrder = cp.debtOrder.map(String);
+    }
+
+    // 4) Recompute outcomes (preview-only; does NOT write DebtTransaction)
+    const debtsNow = await Debt.find({ user: userId }); // includes the new debt
+    const safeNum = (n) => (Number.isFinite(n) ? n : Number(n) || 0);
+    const incomeTotal =
+      safeNum(details.personalIncome) + safeNum(details.totalHouseholdIncome);
+    const totalExpenses = safeNum(details.approxMonthlyExpenses); // from createUserDetails
+
+    await computeAndUpsertStrategyOutcomes({
+      userId,
+      debts: debtsNow,
+      income: incomeTotal,
+      totalExpenses,
+      preview: true,
+    });
+
+    // 5) Regenerate the **active** plan (this writes DebtTransaction docs)
+    // keep your existing signature; if your function doesn't need `res`, drop it.
+    const plan = await regeneratePlanForUser(
+      userId,
+      strategy,
+      customPlanId,
+      res
     );
+
+    // 6) Notify downstream
+    eventBus.emit("dataChanged", { userId });
+
+    // 7) Respond
+    return res.status(201).json({ debt: savedDebt, plan });
+  } catch (err) {
+    console.error("addDebt error:", err);
+    return res.status(500).json({ error: "Failed to add debt" });
   }
-  const plan = await regeneratePlanForUser(userId, strategy, customPlanId, res);
-
-  eventBus.emit("dataChanged", { userId: userId });
-
-  // 8) return both the new debt and the updated plan
-  res.status(201).json({ debt, plan });
 }
-
 async function getDebt(req, res) {
   const userId = req.user.id;
   const debtId = req.params.id;
