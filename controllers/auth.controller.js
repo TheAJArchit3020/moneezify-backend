@@ -76,6 +76,7 @@ async function restoreUserAccount(userId) {
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
+      console.log("updating the user");
       await User.updateOne(
         { _id: userId },
         { $set: { isDeleted: false }, $unset: { deletedAt: "", purgeAt: "" } },
