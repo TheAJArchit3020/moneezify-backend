@@ -29,7 +29,7 @@ app.use("/api/transaction", transactionRoutes);
 app.use("/api/expenses", require("./routes/expenses.routes"));
 app.use("/api/categories", require("./routes/category.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
-
+app.use("/api/moneezifyAgent", require("./routes/agent.routes.js"));
 app.use("/api/survey", require("./routes/survey.routes"));
 app.use("/api/subscription", require("./routes/subscription.routes"));
 

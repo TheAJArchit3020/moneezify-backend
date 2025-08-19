@@ -13,7 +13,7 @@ const payoffPlanModel = require("../models/payoffPlan.model");
 const subscriptionModel = require("../models/subscription.model");
 const customPlanModel = require("../models/customPlan.model");
 const userStrategyOutcomeModel = require("../models/userStrategyOutcome.model");
-
+const mongoose = require("mongoose");
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 async function googleSignIn(req, res) {
