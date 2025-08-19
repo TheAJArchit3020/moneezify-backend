@@ -31,10 +31,8 @@ const expenseCategorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// prevent duplicates per user
-expenseCategorySchema.index({ user: 1 });
 expenseCategorySchema.index(
-  { name: 1 },
+  { user: 1, name: 1 },
   { unique: true, partialFilterExpression: { isDeleted: { $eq: false } } }
 );
 expenseCategorySchema.plugin(softDeletePlugin);
