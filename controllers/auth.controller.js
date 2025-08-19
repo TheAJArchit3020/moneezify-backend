@@ -29,6 +29,8 @@ async function googleSignIn(req, res) {
       audience: process.env.GOOGLE_CLIENT_ID,
     });
     payload = ticket.getPayload();
+
+    console.log("google id: ", payload.sub);
   } catch (err) {
     return res.status(401).json({ error: "Incorrect Authentication" });
   }
@@ -37,6 +39,7 @@ async function googleSignIn(req, res) {
   let user = await User.findOne({ googleId: payload.sub });
   if (!user) {
     const deleted = await User.findOne({ googleId: payload.sub }).withDeleted();
+    console.log(deleted);
     if (
       deleted &&
       deleted.isDeleted &&
