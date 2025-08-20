@@ -22,6 +22,10 @@ const categoryBreakdownSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
+    color: {
+      type: String,
+      required: true,
+    },
   },
   { _id: false }
 );

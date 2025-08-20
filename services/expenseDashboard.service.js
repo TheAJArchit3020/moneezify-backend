@@ -37,6 +37,7 @@ async function rebuildExpenseDashboard(userId, year, month) {
     category: c._id,
     budget: c.budget,
     categoryName: c.name,
+    color: c.color,
     spent: parseFloat((byCat[String(c._id)] || 0).toFixed(2)),
   }));
 

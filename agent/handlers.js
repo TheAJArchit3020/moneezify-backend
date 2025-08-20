@@ -1,3 +1,4 @@
+//agent/handlers.js
 const Debt = require("../models/debt.model");
 const ExpenseDashboardSummary = require("../models/expenseDashboardSummary.model");
 const UserDetails = require("../models/userDetails.model");
@@ -146,6 +147,7 @@ async function handle_get_expense_categories(userId, args) {
 // 5) get_dashboard_summary
 async function handle_get_dashboard_summary(userId, args) {
   const { includeFields, upcomingLimit = 3, balanceLimit = 50 } = args || {};
+  console.log(userId);
   const doc = await DashboardSummary.findOne({ user: userId }).lean();
   if (!doc) return { found: false };
 

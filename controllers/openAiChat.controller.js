@@ -1,129 +1,81 @@
-const OpenAI = require("openai");
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const { QueueEvents } = require("bullmq");
+const { agentQueue, connection } = require("../queue/agent.queue");
 
-const { toolsForOpenAI, zodParsers } = require("../agent/tools");
+function sseHeaders(res) {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+}
 
-const {
-  handle_get_user_debts,
-  handle_get_expense_dashboard_summary,
-  handle_get_user_details,
-  handle_get_expense_categories,
-  handle_get_dashboard_summary,
-} = require("../agent/handlers");
+function send(res, event, data) {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
 
-const SYSTEM = `
-You are Moneezify's finance assistant.
-Before answering, call tools to fetch ONLY the data you need using includeFields to minimize payload.
-- For expense questions: use get_expense_dashboard_summary (month/year).
-- For overall debt KPIs and upcoming payments: use get_dashboard_summary.
-- For individual debts: use get_user_debts with filtering/sorting and includeFields.
-- For budgets/categories: use get_expense_categories.
-- For currency/strategy/income context: use get_user_details.
-Return concise explanations with amounts prefixed by the user's currency when available.
-`;
+async function agentChatStream(req, res) {
+  const userId = req.user.id;
+  const message = (req.body && req.body.message) || req.query.message || "";
 
-async function runToolCall(toolCall, userId) {
-  const name = toolCall.function.name;
-  let rawArgs = {};
+  sseHeaders(res);
+  // heartbeat to keep proxies from closing idle streams
+  const heartbeat = setInterval(() => res.write(`: keep-alive\n\n`), 15000);
+
+  // enqueue the chat job
+  let job;
   try {
-    rawArgs = toolCall.function.arguments
-      ? JSON.parse(toolCall.function.arguments)
-      : {};
-  } catch (_) {
-    rawArgs = {};
-  }
-
-  // Validate args with Zod
-  const schema = zodParsers[name];
-  let args;
-  try {
-    args = schema ? schema.parse(rawArgs) : rawArgs;
+    job = await agentQueue.add("chat", { userId, message });
   } catch (e) {
-    return JSON.stringify({
-      error: `Invalid arguments for ${name}`,
-      details: e.errors || String(e),
-    });
+    clearInterval(heartbeat);
+    send(res, "error", { message: "Failed to enqueue job" });
+    return res.end();
   }
 
-  // Execute handler
-  try {
-    switch (name) {
-      case "get_user_debts":
-        return JSON.stringify(await handle_get_user_debts(userId, args));
-      case "get_expense_dashboard_summary":
-        return JSON.stringify(
-          await handle_get_expense_dashboard_summary(userId, args)
-        );
-      case "get_user_details":
-        return JSON.stringify(await handle_get_user_details(userId, args));
-      case "get_expense_categories":
-        return JSON.stringify(
-          await handle_get_expense_categories(userId, args)
-        );
-      case "get_dashboard_summary":
-        return JSON.stringify(await handle_get_dashboard_summary(userId, args));
-      default:
-        return JSON.stringify({ error: `Unknown tool: ${name}` });
+  send(res, "queued", { jobId: job.id });
+
+  // listen for this job's progress/completion
+  const events = new QueueEvents("agent", connection);
+  await events.waitUntilReady();
+
+  const onProgress = (evt) => {
+    if (evt.jobId !== job.id) return;
+    // we send tokens from the worker as { type:'token', token:'...' }
+    const d = evt.data;
+    if (d && d.type === "token" && typeof d.token === "string") {
+      send(res, "token", { token: d.token });
     }
-  } catch (err) {
-    console.error(`[tool ${name}] error:`, err);
-    return JSON.stringify({ error: `Tool ${name} failed` });
+  };
+
+  const onCompleted = (evt) => {
+    if (evt.jobId !== job.id) return;
+    const answer = (evt.returnvalue && evt.returnvalue.answer) || "";
+    send(res, "final", { answer });
+    send(res, "done", {});
+    cleanup();
+  };
+
+  const onFailed = (evt) => {
+    if (evt.jobId !== job.id) return;
+    send(res, "error", { message: evt.failedReason || "Job failed" });
+    cleanup();
+  };
+
+  function cleanup() {
+    try {
+      events.off("progress", onProgress);
+      events.off("completed", onCompleted);
+      events.off("failed", onFailed);
+      events.close().catch(() => {});
+    } catch (_) {}
+    clearInterval(heartbeat);
+    res.end();
   }
+
+  events.on("progress", onProgress);
+  events.on("completed", onCompleted);
+  events.on("failed", onFailed);
+
+  // if client disconnects, stop listening
+  req.on("close", cleanup);
 }
 
-async function agentChat(req, res) {
-  const userId = req.user.id; // from your auth middleware
-  const { message } = req.body;
-
-  try {
-    // First pass: let the model decide which tools to call
-    let first = await client.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: message },
-      ],
-      tools: toolsForOpenAI,
-      tool_choice: "auto",
-      temperature: 0.2,
-    });
-
-    const toolCalls = first.choices[0]?.message?.tool_calls || [];
-    const toolMessages = [];
-
-    // Execute all tool calls
-    for (const call of toolCalls) {
-      const toolOutput = await runToolCall(call, userId);
-      toolMessages.push({
-        role: "tool",
-        tool_call_id: call.id,
-        name: call.function.name,
-        content: toolOutput,
-      });
-    }
-
-    // Second pass: compose the final answer using tool results
-    let final = first;
-    if (toolMessages.length) {
-      final = await client.chat.completions.create({
-        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-        messages: [
-          { role: "system", content: SYSTEM },
-          { role: "user", content: message },
-          first.choices[0].message,
-          ...toolMessages,
-        ],
-        temperature: 0.2,
-      });
-    }
-
-    const text =
-      final.choices[0]?.message?.content ||
-      "Sorry, I couldn't generate a response.";
-    return res.json({ ok: true, answer: text });
-  } catch (err) {
-    console.error("agentChat error:", err);
-    return res.status(500).json({ ok: false, error: "Agent failed" });
-  }
-}
-module.exports = { agentChat };
+module.exports = { agentChatStream };
