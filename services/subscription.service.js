@@ -4,16 +4,20 @@ const AppConfig = require("../models/appConfig.model");
 
 async function startTrial(userId) {
   // create or upsert a trial‐flag subscription
-
+  console.log("Starting Trial");
   const cfg = await AppConfig.findOne({ key: "trial" });
-  if (!cfg?.value.active) return;
-  await Subscription.findOneAndUpdate(
-    { user: userId, platform: "trial" },
-    { user: userId, platform: "trial", isTrial: true, status: "active" },
-    { upsert: true }
-  );
+  if (!cfg?.value) return;
+  try {
+    await Subscription.findOneAndUpdate(
+      { user: userId, platform: "trial" },
+      { user: userId, platform: "trial", isTrial: true, status: "active" },
+      { upsert: true }
+    );
+    console.log("Subsacription Started");
+  } catch (error) {
+    console.log("Subscription Failed");
+  }
 }
-
 // returns true if user may access premium features
 async function checkAccess(userId) {
   const cfg = await AppConfig.findOne({ key: "trial" });

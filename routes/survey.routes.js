@@ -4,7 +4,7 @@ const auth = require("../middlewares/auth.middleware");
 const ctl = require("../controllers/survey.controller");
 const router = express.Router();
 
-router.get("/", auth, ctl.listQuestions);
+router.get("/", auth, ctl.listSurveyQuestions);
 router.post("/", auth, ctl.submitResponses);
 
 module.exports = router;
