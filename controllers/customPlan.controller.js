@@ -26,19 +26,6 @@ async function createCustomPlan(req, res) {
     return res.status(400).json({ error: "No debts found for user." });
   }
 
-  //   userId,
-  //     debts,
-  //     income,
-  //     totalExpenses,
-  //     strategy,
-  //     customOrder = [],
-  //     extraPayments = [],
-  //     preview = false,
-  // 4) Simulate custom outcome
-  // estimatedDebtFreeDate: lastDueDate,
-  //     totalInterestPaid: +totalInterest.toFixed(2),
-  //     totalSavings: +(interestNoExtra - totalInterest).toFixed(2),
-
   const outcome = await generateFullPlan({
     userId,
     debts,

@@ -7,8 +7,9 @@ const {
   getAllExpensesWithFilters,
 } = require("../controllers/expense.controller");
 const router = express.Router();
+const subscription = require("../middlewares/subscription.middleware");
 
-router.post("/logExpense", authMiddleware, logExpense);
+router.post("/logExpense", authMiddleware, subscription, logExpense);
 router.get("/dashboard", authMiddleware, getExpenseDashboard);
 router.get("/", authMiddleware, getAllExpensesWithFilters);
 module.exports = router;

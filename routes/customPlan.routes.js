@@ -7,8 +7,8 @@ const {
   previewCustomPlan,
   getUserCustomPlans,
 } = require("../controllers/customPlan.controller");
-
-router.post("/", auth, createCustomPlan);
+const subscription = require("../middlewares/subscription.middleware");
+router.post("/", auth, subscription, createCustomPlan);
 router.get("/", auth, getDefaultCustomPlan);
 router.post("/preview", auth, previewCustomPlan);
 router.get("/all", auth, getUserCustomPlans);

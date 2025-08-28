@@ -7,8 +7,8 @@ const {
   getDebt,
   getDebtPage,
 } = require("../controllers/debt.controller");
-
-router.post("/debt", auth, addDebt);
+const subscription = require("../middlewares/subscription.middleware");
+router.post("/debt", auth, subscription, addDebt);
 router.get("/debt/:id", auth, getDebt);
 router.get("/debtpage", auth, getDebtPage);
 module.exports = router;
